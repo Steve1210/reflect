@@ -6,7 +6,7 @@ type Reflection struct {
 }
 
 type ReflectionHeader struct {
-	Id        int64
+	Id        int64    `json:"id"`
 	Title     string   `json:"title"`
 	Tags      []string `json:"tags"`
 	CreatedAt int64    `json:"created_at"`
