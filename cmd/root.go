@@ -9,9 +9,17 @@ import (
 	"github.com/spf13/cobra"
 )
 
+type storeInterface interface {
+	FetchAllMetadataWithFilters(ctx context.Context, filters internal.FilterOptions) ([]internal.ReflectionHeader, error)
+	FetchReflectionByID(ctx context.Context, id int64) (internal.Reflection, error)
+	InsertReflection(ctx context.Context, r internal.Reflection) (int64, error)
+	UpdateReflection(ctx context.Context, id int64, r internal.Reflection) error
+	DeleteReflection(ctx context.Context, id int64) error
+}
+
 var (
 	dbPool *pgxpool.Pool
-	store  *internal.Store
+	store  storeInterface
 )
 
 var rootCmd = &cobra.Command{

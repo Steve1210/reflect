@@ -6,6 +6,7 @@ import (
 	"log"
 	"strings"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -41,6 +42,40 @@ func (s *Store) InsertReflection(ctx context.Context, r Reflection) (int64, erro
 	}
 
 	return id, nil
+}
+
+func (s *Store) FetchReflectionByID(ctx context.Context, id int64) (Reflection, error) {
+	var r Reflection
+	query := `SELECT id, title, tags, body, created_at, updated_at FROM reflections WHERE id = $1`
+	err := s.DB.QueryRow(ctx, query, id).Scan(&r.Id, &r.Title, &r.Tags, &r.Body, &r.CreatedAt, &r.UpdatedAt)
+	if err != nil {
+		return Reflection{}, err
+	}
+	return r, nil
+}
+
+func (s *Store) UpdateReflection(ctx context.Context, id int64, r Reflection) error {
+	query := `UPDATE reflections SET title=$1, tags=$2, body=$3, updated_at=$4 WHERE id=$5`
+	tag, err := s.DB.Exec(ctx, query, r.Title, r.Tags, r.Body, r.UpdatedAt, id)
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		return pgx.ErrNoRows
+	}
+	return nil
+}
+
+func (s *Store) DeleteReflection(ctx context.Context, id int64) error {
+	query := `DELETE FROM reflections WHERE id = $1`
+	tag, err := s.DB.Exec(ctx, query, id)
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		return pgx.ErrNoRows
+	}
+	return nil
 }
 
 func (s *Store) FetchAllMetadata(ctx context.Context) ([]ReflectionHeader, error) {
