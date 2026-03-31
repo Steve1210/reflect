@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"log"
+	"os"
 	"reflections/internal"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -39,7 +40,10 @@ func init() {
 func initDB() {
 	ctx := context.Background()
 
-	databaseURL := "postgres://steve@localhost:5432/steve"
+	databaseURL := os.Getenv("DATABASE_URL")
+	if databaseURL == "" {
+		databaseURL = "postgres://steve@localhost:5432/steve"
+	}
 
 	var err error
 	dbPool, err = pgxpool.New(ctx, databaseURL)
