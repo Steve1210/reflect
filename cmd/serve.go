@@ -21,6 +21,10 @@ var serveCmd = &cobra.Command{
 	Use:   "serve",
 	Short: "Start the HTTP API server",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if apiURL != "" {
+			return fmt.Errorf("--api-url cannot be used with the serve command")
+		}
+
 		port, err := cmd.Flags().GetInt("port")
 		if err != nil {
 			return err

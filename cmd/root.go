@@ -21,6 +21,7 @@ type storeInterface interface {
 var (
 	dbPool *pgxpool.Pool
 	store  storeInterface
+	apiURL string
 )
 
 var rootCmd = &cobra.Command{
@@ -35,9 +36,15 @@ func Execute() {
 
 func init() {
 	cobra.OnInitialize(initDB)
+	rootCmd.PersistentFlags().StringVar(&apiURL, "api-url", "", "Base URL of the reflections API (e.g. http://192.168.0.8:30080)")
 }
 
 func initDB() {
+	if apiURL != "" {
+		store = newHTTPStore(apiURL)
+		return
+	}
+
 	ctx := context.Background()
 
 	databaseURL := os.Getenv("DATABASE_URL")
@@ -52,5 +59,4 @@ func initDB() {
 	}
 
 	store = internal.NewStore(dbPool)
-
 }
