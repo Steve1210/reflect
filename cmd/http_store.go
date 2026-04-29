@@ -84,8 +84,28 @@ func (h *httpStore) FetchAllMetadataWithFilters(ctx context.Context, f internal.
 	return results, nil
 }
 
-func (h *httpStore) FetchReflectionByID(_ context.Context, _ int64) (internal.Reflection, error) {
-	return internal.Reflection{}, fmt.Errorf("not supported in API mode")
+func (h *httpStore) FetchReflectionByID(ctx context.Context, id int64) (internal.Reflection, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet,
+		fmt.Sprintf("%s/reflections/%d", h.baseURL, id), nil)
+	if err != nil {
+		return internal.Reflection{}, err
+	}
+	resp, err := h.client.Do(req)
+	if err != nil {
+		return internal.Reflection{}, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode == http.StatusNotFound {
+		return internal.Reflection{}, fmt.Errorf("reflection %d not found", id)
+	}
+	if resp.StatusCode != http.StatusOK {
+		return internal.Reflection{}, fmt.Errorf("API returned %d", resp.StatusCode)
+	}
+	var result internal.Reflection
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return internal.Reflection{}, err
+	}
+	return result, nil
 }
 
 func (h *httpStore) UpdateReflection(_ context.Context, _ int64, _ internal.Reflection) error {
