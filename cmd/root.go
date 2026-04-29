@@ -40,6 +40,9 @@ func init() {
 }
 
 func initDB() {
+	if apiURL == "" {
+		apiURL = os.Getenv("REFLECT_API_URL")
+	}
 	if apiURL != "" {
 		store = newHTTPStore(apiURL)
 		return
