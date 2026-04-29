@@ -1,0 +1,49 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: init-db-schema
+  namespace: reflections
+spec:
+  backoffLimit: 5
+  template:
+    spec:
+      restartPolicy: OnFailure
+      nodeSelector:
+        role: server
+      initContainers:
+        - name: wait-for-postgres
+          image: postgres:16-bookworm
+          command:
+            - sh
+            - -c
+            - |
+              until pg_isready -h postgres-0.postgres.reflections.svc.cluster.local -p 5432 -U reflections; do
+                echo "waiting for postgres..."
+                sleep 2
+              done
+      containers:
+        - name: init-schema
+          image: postgres:16-bookworm
+          env:
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-credentials
+                  key: POSTGRES_PASSWORD
+          command:
+            - psql
+            - -h
+            - postgres-0.postgres.reflections.svc.cluster.local
+            - -U
+            - reflections
+            - -d
+            - reflections
+            - -f
+            - /sql/create-tables.sql
+          volumeMounts:
+            - name: sql
+              mountPath: /sql
+      volumes:
+        - name: sql
+          configMap:
+            name: init-db-sql

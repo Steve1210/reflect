@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: reflections
+  namespace: reflections
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: reflections
+  template:
+    metadata:
+      labels:
+        app: reflections
+    spec:
+      initContainers:
+        - name: wait-for-postgres
+          image: postgres:16-bookworm
+          command:
+            - sh
+            - -c
+            - |
+              until pg_isready -h postgres-0.postgres.reflections.svc.cluster.local -p 5432 -U reflections; do
+                echo "waiting for postgres..."
+                sleep 2
+              done
+      containers:
+        - name: reflections
+          # Replace <PI4_IP> with your Pi 4/5's IP address
+          image: <PI4_IP>:30500/reflections:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: reflections-app-config
+                  key: DATABASE_URL
+          resources:
+            requests:
+              memory: "32Mi"
+              cpu: "50m"
+            limits:
+              memory: "128Mi"
+              cpu: "250m"
+          readinessProbe:
+            httpGet:
+              path: /reflections
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /reflections
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 10
